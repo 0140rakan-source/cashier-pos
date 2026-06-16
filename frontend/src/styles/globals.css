@@ -1,0 +1,64 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html { font-family: 'Inter', 'Noto Sans Arabic', system-ui, sans-serif; }
+  html[dir="rtl"] { direction: rtl; }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+/* ─── Print CSS — 80mm thermal receipt ─────────────────────── */
+@media print {
+  .no-print { display: none !important; }
+
+  /* Receipt: 80mm thermal */
+  body * { visibility: hidden; }
+  #receipt-print-area, #receipt-print-area * { visibility: visible; }
+  #receipt-print-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 80mm;
+    font-size: 12px;
+    direction: rtl;
+  }
+
+  /* Reports: full-page print */
+  #report-print-area {
+    display: block !important;
+    visibility: visible !important;
+  }
+  #report-print-area * {
+    visibility: visible !important;
+  }
+  #report-print-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    font-size: 12px;
+    padding: 20px;
+    direction: rtl;
+  }
+
+  
+  /* Force images (barcodes) to print at full quality */
+  img {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+    page-break-inside: avoid;
+  }
+
+  /* Day-close report print */
+  #day-close-print,
+  #day-close-print * {
+    visibility: visible !important;
+  }
+}

@@ -1,0 +1,176 @@
+{
+  "common": {
+    "welcome": "مرحباً",
+    "save": "حفظ",
+    "cancel": "إلغاء",
+    "delete": "حذف",
+    "edit": "تعديل",
+    "add": "إضافة",
+    "search": "بحث...",
+    "no_data": "لا توجد بيانات",
+    "loading": "جارٍ التحميل...",
+    "confirm_delete": "هل أنت متأكد من الحذف؟",
+    "success": "تمت العملية بنجاح",
+    "error": "حدث خطأ",
+    "actions": "الإجراءات",
+    "name": "الاسم",
+    "phone": "الهاتف",
+    "email": "البريد الإلكتروني",
+    "notes": "ملاحظات",
+    "currency": "ر.س",
+    "edit": "تعديل",
+    "logout": "تسجيل خروج",
+    "back": "رجوع",
+    "create": "إنشاء",
+    "update": "تحديث",
+    "close": "إغلاق",
+    "yes": "نعم",
+    "no": "لا"
+  },
+  "login": {
+    "title": "كاشير",
+    "subtitle": "نظام نقاط البيع",
+    "username": "اسم المستخدم",
+    "password": "كلمة المرور",
+    "login_btn": "تسجيل الدخول",
+    "wrong_credentials": "بيانات الدخول غير صحيحة"
+  },
+  "nav": {
+    "dashboard": "لوحة التحكم",
+    "pos": "نقطة البيع",
+    "products": "المنتجات",
+    "categories": "التصنيفات",
+    "inventory": "المخزون",
+    "purchases": "المشتريات",
+    "customers": "العملاء",
+    "suppliers": "الموردين",
+    "expenses": "المصروفات",
+    "reports": "التقارير",
+    "users": "المستخدمين",
+    "settings": "الإعدادات",
+    "shifts": "الورديات"
+  },
+  "dashboard": {
+    "subtitle": "أهلاً بك في نظام كاشير",
+    "today_sales": "مبيعات اليوم",
+    "today_transactions": "عمليات اليوم",
+    "low_stock_products": "منتجات منخفضة",
+    "customers": "العملاء",
+    "quick_actions": "إجراءات سريعة",
+    "system_info": "معلومات النظام"
+  },
+  "products": {
+    "title": "المنتجات",
+    "name_ar": "الاسم (عربي)",
+    "name_en": "الاسم (إنجليزي)",
+    "barcode": "الباركود",
+    "sku": "الرمز التعريفي",
+    "cost_price": "سعر التكلفة",
+    "sale_price": "سعر البيع",
+    "track_stock": "تتبع المخزون",
+    "category": "التصنيف"
+  },
+  "categories": {
+    "title": "التصنيفات",
+    "name_ar": "الاسم (عربي)",
+    "name_en": "الاسم (إنجليزي)",
+    "sort_order": "الترتيب"
+  },
+  "inventory": {
+    "title": "المخزون",
+    "current": "الكمية الحالية",
+    "min": "الحد الأدنى",
+    "unit": "الوحدة",
+    "adjust_stock": "تعديل المخزون",
+    "low_stock_alert": "تنبيه: مخزون منخفض",
+    "recent_activity": "آخر الحركات",
+    "in": "إضافة",
+    "out": "صرف",
+    "adjust": "تعديل"
+  },
+  "purchases": {
+    "title": "المشتريات",
+    "new_purchase": "شراء جديد",
+    "supplier": "المورّد",
+    "items": "العناصر",
+    "total": "الإجمالي",
+    "payment_method": "طريقة الدفع",
+    "payment_status": "حالة الدفع",
+    "paid": "مدفوع",
+    "partial": "جزئي",
+    "unpaid": "غير مدفوع",
+    "reference": "المرجع"
+  },
+  "customers": {
+    "title": "العملاء",
+    "name": "الاسم",
+    "vat_number": "الرقم الضريبي"
+  },
+  "suppliers": {
+    "title": "الموردين",
+    "name": "الاسم",
+    "phone": "الهاتف"
+  },
+  "expenses": {
+    "title": "المصروفات",
+    "amount": "المبلغ",
+    "category": "التصنيف",
+    "date": "التاريخ",
+    "description": "الوصف"
+  },
+  "reports": {
+    "title": "التقارير",
+    "today": "اليوم",
+    "this_week": "هذا الأسبوع",
+    "this_month": "هذا الشهر",
+    "total_sales": "إجمالي المبيعات",
+    "total_expenses": "إجمالي المصروفات",
+    "net_profit": "صافي الربح"
+  },
+  "users": {
+    "title": "المستخدمين",
+    "full_name": "الاسم الكامل",
+    "username": "اسم المستخدم",
+    "role": "الدور",
+    "status": "الحالة",
+    "active": "نشط",
+    "inactive": "غير نشط",
+    "pin": "رمز PIN",
+    "reset_pin": "إعادة تعيين PIN"
+  },
+  "settings": {
+    "title": "الإعدادات",
+    "business_name": "اسم المنشأة",
+    "tax": "الضريبة",
+    "receipt": "الإيصال",
+    "printer": "الطابعة",
+    "language": "اللغة",
+    "save": "حفظ الإعدادات"
+  },
+  "pos": {
+    "title": "نقطة البيع",
+    "search_product": "ابحث عن منتج...",
+    "cart": "السلة",
+    "checkout": "إتمام البيع",
+    "total": "الإجمالي",
+    "cash": "نقدي",
+    "card": "بطاقة",
+    "transfer": "تحويل",
+    "amount_paid": "المبلغ المدفوع",
+    "change": "الباقي",
+    "complete_sale": "إتمام البيع"
+  },
+  "shifts": {
+    "title": "الورديات",
+    "open_shift": "فتح وردية",
+    "close_shift": "إغلاق وردية",
+    "opened_at": "فُتحت في",
+    "closed_at": "أُغلقت في",
+    "starting_cash": "رصيد البداية",
+    "expected_cash": "الرصيد المتوقع",
+    "actual_cash": "الرصيد الفعلي",
+    "variance": "الفرق",
+    "no_active_shift": "لا توجد وردية نشطة",
+    "opening_cash": "أدخل رصيد البداية"
+  }
+}

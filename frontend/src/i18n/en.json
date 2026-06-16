@@ -1,0 +1,175 @@
+{
+  "common": {
+    "welcome": "Welcome",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "add": "Add",
+    "search": "Search...",
+    "no_data": "No data available",
+    "loading": "Loading...",
+    "confirm_delete": "Are you sure you want to delete?",
+    "success": "Operation completed successfully",
+    "error": "An error occurred",
+    "actions": "Actions",
+    "name": "Name",
+    "phone": "Phone",
+    "email": "Email",
+    "notes": "Notes",
+    "currency": "SAR",
+    "logout": "Logout",
+    "back": "Back",
+    "create": "Create",
+    "update": "Update",
+    "close": "Close",
+    "yes": "Yes",
+    "no": "No"
+  },
+  "login": {
+    "title": "Cashier",
+    "subtitle": "Point of Sale System",
+    "username": "Username",
+    "password": "Password",
+    "login_btn": "Login",
+    "wrong_credentials": "Invalid username or password"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "pos": "Point of Sale",
+    "products": "Products",
+    "categories": "Categories",
+    "inventory": "Inventory",
+    "purchases": "Purchases",
+    "customers": "Customers",
+    "suppliers": "Suppliers",
+    "expenses": "Expenses",
+    "reports": "Reports",
+    "users": "Users",
+    "settings": "Settings",
+    "shifts": "Shifts"
+  },
+  "dashboard": {
+    "subtitle": "Welcome to Cashier POS",
+    "today_sales": "Today's Sales",
+    "today_transactions": "Today's Transactions",
+    "low_stock_products": "Low Stock Products",
+    "customers": "Customers",
+    "quick_actions": "Quick Actions",
+    "system_info": "System Info"
+  },
+  "products": {
+    "title": "Products",
+    "name_ar": "Name (Arabic)",
+    "name_en": "Name (English)",
+    "barcode": "Barcode",
+    "sku": "SKU",
+    "cost_price": "Cost Price",
+    "sale_price": "Sale Price",
+    "track_stock": "Track Stock",
+    "category": "Category"
+  },
+  "categories": {
+    "title": "Categories",
+    "name_ar": "Name (Arabic)",
+    "name_en": "Name (English)",
+    "sort_order": "Sort Order"
+  },
+  "inventory": {
+    "title": "Inventory",
+    "current": "Current Stock",
+    "min": "Minimum",
+    "unit": "Unit",
+    "adjust_stock": "Adjust Stock",
+    "low_stock_alert": "Alert: Low stock",
+    "recent_activity": "Recent Activity",
+    "in": "In",
+    "out": "Out",
+    "adjust": "Adjust"
+  },
+  "purchases": {
+    "title": "Purchases",
+    "new_purchase": "New Purchase",
+    "supplier": "Supplier",
+    "items": "Items",
+    "total": "Total",
+    "payment_method": "Payment Method",
+    "payment_status": "Payment Status",
+    "paid": "Paid",
+    "partial": "Partial",
+    "unpaid": "Unpaid",
+    "reference": "Reference"
+  },
+  "customers": {
+    "title": "Customers",
+    "name": "Name",
+    "vat_number": "VAT Number"
+  },
+  "suppliers": {
+    "title": "Suppliers",
+    "name": "Name",
+    "phone": "Phone"
+  },
+  "expenses": {
+    "title": "Expenses",
+    "amount": "Amount",
+    "category": "Category",
+    "date": "Date",
+    "description": "Description"
+  },
+  "reports": {
+    "title": "Reports",
+    "today": "Today",
+    "this_week": "This Week",
+    "this_month": "This Month",
+    "total_sales": "Total Sales",
+    "total_expenses": "Total Expenses",
+    "net_profit": "Net Profit"
+  },
+  "users": {
+    "title": "Users",
+    "full_name": "Full Name",
+    "username": "Username",
+    "role": "Role",
+    "status": "Status",
+    "active": "Active",
+    "inactive": "Inactive",
+    "pin": "PIN",
+    "reset_pin": "Reset PIN"
+  },
+  "settings": {
+    "title": "Settings",
+    "business_name": "Business Name",
+    "tax": "Tax",
+    "receipt": "Receipt",
+    "printer": "Printer",
+    "language": "Language",
+    "save": "Save Settings"
+  },
+  "pos": {
+    "title": "Point of Sale",
+    "search_product": "Search product...",
+    "cart": "Cart",
+    "checkout": "Checkout",
+    "total": "Total",
+    "cash": "Cash",
+    "card": "Card",
+    "transfer": "Transfer",
+    "amount_paid": "Amount Paid",
+    "change": "Change",
+    "complete_sale": "Complete Sale"
+  },
+  "shifts": {
+    "title": "Shifts",
+    "open_shift": "Open Shift",
+    "close_shift": "Close Shift",
+    "opened_at": "Opened at",
+    "closed_at": "Closed at",
+    "starting_cash": "Starting Cash",
+    "expected_cash": "Expected Cash",
+    "actual_cash": "Actual Cash",
+    "variance": "Variance",
+    "no_active_shift": "No active shift",
+    "opening_cash": "Enter opening cash amount"
+  }
+}

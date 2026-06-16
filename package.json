@@ -1,0 +1,77 @@
+{
+  "name": "accountant",
+  "version": "1.0.0",
+  "private": true,
+  "description": "كاشير — نظام نقاط البيع المحلي للأعمال السعودية",
+  "main": "electron/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "concurrently -n BACKEND,FRONTEND -c blue,green \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "cd backend && node --watch src/server.js",
+    "dev:frontend": "cd frontend && vite --host",
+    "build": "npm run build:frontend",
+    "build:frontend": "cd frontend && vite build",
+    "build:electron": "npm run build:frontend && electron-builder --win --x64",
+    "db:migrate": "cd backend && npx prisma migrate deploy",
+    "db:generate": "cd backend && npx prisma generate",
+    "db:seed": "cd backend && node prisma/seed.js",
+    "db:studio": "cd backend && npx prisma studio",
+    "electron:dev": "cross-env NODE_ENV=development electron electron/main.js",
+    "electron:build": "npm run build:frontend && electron-builder"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "cross-env": "^7.0.3",
+    "electron": "^28.2.0",
+    "electron-builder": "^24.12.0"
+  },
+  "build": {
+    "appId": "com.cashier.pos",
+    "productName": "Accountant",
+    "copyright": "Copyright 2026",
+    "asar": false,
+    "directories": {
+      "output": "dist-electron",
+      "buildResources": "resources"
+    },
+    "files": [
+      "electron/**/*",
+      "frontend/dist/**/*",
+      "backend/src/**/*",
+      "backend/prisma/**/*",
+      "backend/package.json",
+      "backend/package-lock.json",
+      "backend/.env",
+      "data/.gitkeep",
+      "uploads/**/*",
+      "!backend/node_modules/.prisma/client/libquery_engine-darwin*",
+      "!**/*.map",
+      "!**/.git"
+    ],
+    "extraResources": [
+      {
+        "from": "backend/node_modules",
+        "to": "backend-modules",
+        "filter": ["**/*"]
+      }
+    ],
+    "win": {
+      "target": [{"target": "nsis", "arch": ["x64"]}]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "perMachine": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Accountant",
+      "include": "resources/installer.nsh"
+    },
+    "mac": {
+      "target": "dmg"
+    }
+  },
+  "dependencies": {
+    "vite": "^5.4.21"
+  }
+}

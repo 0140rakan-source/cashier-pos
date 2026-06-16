@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🔐 مولّد رموز التفعيل — Cashier POS</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', 'Noto Sans Arabic', Arial, sans-serif;
+      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      direction: rtl;
+    }
+    .card {
+      background: #fff;
+      border-radius: 24px;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.5);
+      padding: 40px 36px;
+      width: 100%;
+      max-width: 520px;
+    }
+    .icon { width: 70px; height: 70px; background: #fef3c7; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; font-size: 32px; }
+    h1 { font-size: 22px; font-weight: 800; color: #0f172a; text-align: center; margin-bottom: 4px; }
+    .subtitle { font-size: 13px; color: #64748b; text-align: center; margin-bottom: 28px; }
+    .badge { display: inline-block; background: #dc2626; color: #fff; padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; margin-bottom: 24px; }
+    label { display: block; font-size: 14px; font-weight: 600; color: #374151; margin-bottom: 8px; }
+    input {
+      width: 100%; border: 2px solid #e2e8f0; border-radius: 12px; padding: 14px 16px;
+      font-size: 18px; font-family: monospace; letter-spacing: 3px; text-align: center;
+      background: #f8fafc; color: #0f172a; outline: none; direction: ltr; margin-bottom: 16px;
+    }
+    input:focus { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.15); }
+    .btn {
+      width: 100%; padding: 16px; border: none; border-radius: 12px; font-size: 17px;
+      font-weight: 700; cursor: pointer; font-family: inherit; display: flex;
+      align-items: center; justify-content: center; gap: 8px;
+    }
+    .btn-primary { background: #2563eb; color: #fff; }
+    .btn-primary:hover { background: #1d4ed8; }
+    .btn-primary:disabled { background: #93c5fd; cursor: not-allowed; }
+    .result-box {
+      background: #f0fdf4; border: 2px solid #22c55e; border-radius: 16px;
+      padding: 24px; text-align: center; margin-top: 20px; display: none;
+    }
+    .result-box.visible { display: block; }
+    .result-label { font-size: 13px; color: #16a34a; font-weight: 600; margin-bottom: 8px; }
+    .result-code {
+      font-size: 24px; font-family: monospace; font-weight: 700; letter-spacing: 3px;
+      color: #15803d; direction: ltr; user-select: all; cursor: text; padding: 8px;
+      background: #dcfce7; border-radius: 8px; margin: 8px 0;
+    }
+    .copy-btn {
+      margin-top: 10px; padding: 8px 20px; background: #16a34a; color: #fff;
+      border: none; border-radius: 8px; font-size: 13px; font-weight: 600;
+      cursor: pointer; font-family: inherit;
+    }
+    .copy-btn:hover { background: #15803d; }
+    .history { margin-top: 24px; border-top: 1px solid #f1f5f9; padding-top: 16px; }
+    .history h3 { font-size: 14px; color: #475569; margin-bottom: 12px; }
+    .history-item {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 8px 12px; background: #f8fafc; border-radius: 8px; margin-bottom: 6px;
+      font-size: 12px; font-family: monospace; direction: ltr;
+    }
+    .history-item .req { color: #6b7280; }
+    .history-item .act { color: #16a34a; font-weight: 700; }
+    .history-item .time { color: #9ca3af; font-size: 10px; }
+    .warning { background: #fef3c7; border: 1.5px solid #f59e0b; border-radius: 10px; padding: 12px; margin-bottom: 20px; font-size: 12px; color: #92400e; text-align: center; }
+    .clear-btn { padding: 6px 14px; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 11px; cursor: pointer; color: #64748b; font-family: inherit; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">🛡️</div>
+    <h1>مولّد رموز التفعيل</h1>
+    <p class="subtitle">Cashier POS — Activation Code Generator</p>
+    <div style="text-align: center;"><span class="badge">⚠️ للبائع فقط — لا تشارك هذه الأداة</span></div>
+
+    <div class="warning">
+      هذه الأداة لتوليد رموز التفعيل فقط. لا ترسلها للعملاء.<br>
+      أرسل فقط <strong>رمز التفعيل</strong> الناتج.
+    </div>
+
+    <label>رمز الطلب من العميل / Customer Request Code</label>
+    <input type="text" id="requestCode" placeholder="XXXX-XXXX-XXXX-XXXX" oninput="formatInput(this)" maxlength="19">
+
+    <button class="btn btn-outline-secondary btn-sm mb-3" onclick="sessionStorage.clear(); alert('تم مسح الجلسة')">🔒 مسح الجلسة</button><br><button class="btn btn-primary" id="generateBtn" onclick="generate()" disabled>
+      ⚡ توليد رمز التفعيل
+    </button>
+
+    <div class="result-box" id="resultBox">
+      <div class="result-label">✅ رمز التفعيل — أرسله للعميل</div>
+      <div class="result-code" id="resultCode"></div>
+      <button class="copy-btn" onclick="copyResult()">📋 نسخ رمز التفعيل</button>
+      <div id="copyMsg" style="font-size:12px; color:#16a34a; margin-top:6px; display:none;">✓ تم النسخ</div>
+    </div>
+
+    <div class="history" id="historySection" style="display:none;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <h3 style="margin:0;">📜 السجل</h3>
+        <button class="clear-btn" onclick="clearHistory()">مسح السجل</button>
+      </div>
+      <div id="historyList"></div>
+    </div>
+  </div>
+
+  <script>
+    // HMAC-SHA256 using Web Crypto API
+    async function hmacSHA256(secret, message) {
+      const enc = new TextEncoder();
+      const key = await crypto.subtle.importKey('raw', enc.encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+      const sig = await crypto.subtle.sign('HMAC', key, enc.encode(message));
+      return Array.from(new Uint8Array(sig)).map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    // SECRET is loaded from session — never hardcoded in HTML
+    const SECRET = sessionStorage.getItem('gen_secret');
+
+    function formatInput(el) {
+      let v = el.value.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+      let parts = v.match(/.{1,4}/g) || [];
+      el.value = parts.join('-').slice(0, 19);
+      document.getElementById('generateBtn').disabled = v.length < 4;
+    }
+
+    async function generate() {
+      if (!sessionStorage.getItem('gen_secret')) {
+        const s = prompt('أدخل مفتاح التوليد السري (راجع ملف .env) / Enter ACTIVATION_SECRET:');
+        if (!s) return;
+        sessionStorage.setItem('gen_secret', s);
+      }
+      const reqCode = document.getElementById('requestCode').value.replace(/[^A-Z0-9]/g, '').toUpperCase();
+      const reqFormatted = document.getElementById('requestCode').value.toUpperCase().trim();
+      if (!reqCode) return;
+
+      const hash = await hmacSHA256(SECRET, reqFormatted.replace(/-/g, '').length >= 4 ? reqFormatted : reqCode);
+      // Must match: HMAC of the FORMATTED request code (with dashes) — same as backend
+      const hashFromFormatted = await hmacSHA256(SECRET, reqFormatted);
+      const code = hashFromFormatted.slice(0, 16).toUpperCase();
+      const formatted = code.match(/.{1,4}/g).join('-');
+
+      document.getElementById('resultCode').textContent = formatted;
+      document.getElementById('resultBox').classList.add('visible');
+
+      // Save to history
+      const history = JSON.parse(localStorage.getItem('activation_history') || '[]');
+      history.unshift({ request: reqFormatted, activation: formatted, time: new Date().toLocaleString('ar-SA') });
+      if (history.length > 20) history.pop();
+      localStorage.setItem('activation_history', JSON.stringify(history));
+      renderHistory();
+    }
+
+    function copyResult() {
+      const code = document.getElementById('resultCode').textContent;
+      navigator.clipboard.writeText(code).then(() => {
+        const msg = document.getElementById('copyMsg');
+        msg.style.display = 'block';
+        setTimeout(() => msg.style.display = 'none', 2000);
+      });
+    }
+
+    function renderHistory() {
+      const history = JSON.parse(localStorage.getItem('activation_history') || '[]');
+      const section = document.getElementById('historySection');
+      const list = document.getElementById('historyList');
+      if (history.length === 0) { section.style.display = 'none'; return; }
+      section.style.display = 'block';
+      list.innerHTML = history.map(h => `
+        <div class="history-item">
+          <span class="req">${h.request}</span>
+          <span class="act">${h.activation}</span>
+          <span class="time">${h.time}</span>
+        </div>
+      `).join('');
+    }
+
+    function clearHistory() {
+      localStorage.removeItem('activation_history');
+      renderHistory();
+    }
+
+    renderHistory();
+  </script>
+</body>
+</html>

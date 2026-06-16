@@ -1,0 +1,457 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Business / Store ─────────────────────────────
+model Business {
+  id           String   @id @default(cuid())
+  nameAr       String
+  nameEn       String
+  vatNumber    String?
+  crNumber     String?
+  addressAr    String?
+  addressEn    String?
+  phone        String?
+  email        String?
+  logo         String?
+  businessMode String   // RETAIL | CAFE | RESTAURANT
+  currency     String   @default("SAR")
+  settings     Settings?
+  users        User[]
+  licenses     License[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("businesses")
+}
+
+// ─── Settings ─────────────────────────────────────
+model Settings {
+  id                    String   @id @default(cuid())
+  businessId            String   @unique
+  business              Business @relation(fields: [businessId], references: [id])
+  language              String   @default("ar")
+  receiptHeaderAr       String?
+  receiptHeaderEn       String?
+  receiptFooterAr       String?
+  receiptFooterEn       String?
+  receiptShowTax        Boolean  @default(true)
+  receiptShowDiscount   Boolean  @default(true)
+  taxRate               Decimal  @default(0.15)
+  lowStockThreshold     Int      @default(5)
+  telegramBotToken      String?
+  telegramChatId        String?
+  telegramEnabled       Boolean  @default(false)
+  defaultPaymentMethod  String   @default("CASH")
+  autoPrintReceipt      Boolean  @default(true)
+  orderChannels         String?  // JSON string: [{key,label,enabled,defaultPayment}]
+  zatcaPhase            String   @default("NONE")
+  zatcaSellerName       String?
+  zatcaVatNumber        String?
+  zatcaCsid             String?
+  zatcaPrivateKey       String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@map("settings")
+}
+
+// ─── Roles and Permissions ──────────────────────────
+model Role {
+  id          String           @id @default(cuid())
+  name        String           @unique
+  isSystem    Boolean          @default(false)
+  description String?
+  permissions RolePermission[]
+  users       User[]
+  createdAt   DateTime         @default(now())
+
+  @@map("roles")
+}
+
+model RolePermission {
+  id         String   @id @default(cuid())
+  roleId     String
+  role       Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission String
+  createdAt  DateTime @default(now())
+
+  @@unique([roleId, permission])
+  @@map("role_permissions")
+}
+
+// ─── Users ──────────────────────────────────────────
+model User {
+  id           String    @id @default(cuid())
+  businessId   String
+  business     Business  @relation(fields: [businessId], references: [id])
+  roleId       String
+  role         Role      @relation(fields: [roleId], references: [id])
+  fullName     String
+  username     String
+  passwordHash String
+  pin          String?
+  avatar       String?
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  shifts       Shift[]
+  sales        Sale[]
+  expenses     Expense[]
+  purchases    Purchase[]
+
+  @@unique([businessId, username])
+  @@map("users")
+}
+
+// ─── Categories ─────────────────────────────────────
+model Category {
+  id           String     @id @default(cuid())
+  businessId   String
+  nameAr       String
+  nameEn       String
+  parentId     String?
+  parent       Category?  @relation("CatParent", fields: [parentId], references: [id], onDelete: SetNull)
+  children     Category[] @relation("CatParent")
+  sortOrder    Int        @default(0)
+  businessMode String?
+  icon         String?
+  color        String?
+  products     Product[]
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@map("categories")
+}
+
+// ─── Products ───────────────────────────────────────
+model Product {
+  id           String       @id @default(cuid())
+  businessId   String
+  categoryId   String
+  category     Category     @relation(fields: [categoryId], references: [id])
+  sku          String?
+  barcode      String?
+  nameAr       String
+  nameEn       String
+  description  String?
+  costPrice    Decimal      @default(0)
+  salePrice    Decimal
+  taxRate      Decimal      @default(0.15)
+  trackStock   Boolean      @default(true)
+  images       String?      // JSON string array
+  isActive     Boolean      @default(true)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  inventory    Inventory?
+  saleItems    SaleItem[]
+  purchaseItems PurchaseItem[]
+
+  @@map("products")
+}
+
+// ─── Inventory ──────────────────────────────────────
+model Inventory {
+  id              String    @id @default(cuid())
+  businessId      String
+  productId       String    @unique
+  product         Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  currentStock    Decimal   @default(0)
+  reserved        Decimal   @default(0)
+  minStock        Decimal   @default(5)
+  unit            String    @default("piece")
+  lastRestockedAt DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@map("inventory")
+}
+
+model InventoryLog {
+  id           String    @id @default(cuid())
+  businessId   String
+  productId    String
+  changeType   String
+  quantity     Decimal
+  previousQty  Decimal
+  newQty       Decimal
+  referenceId  String?
+  note         String?
+  createdAt    DateTime  @default(now())
+
+  @@map("inventory_logs")
+}
+
+// ─── Customers ──────────────────────────────────────
+model Customer {
+  id             String   @id @default(cuid())
+  businessId     String
+  name           String
+  phone          String?
+  email          String?
+  address        String?
+  vatNumber      String?
+  notes          String?
+  totalPurchases Decimal  @default(0)
+  sales          Sale[]
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@map("customers")
+}
+
+// ─── Suppliers ──────────────────────────────────────
+model Supplier {
+  id         String     @id @default(cuid())
+  businessId String
+  name       String
+  contact    String?
+  phone      String?
+  email      String?
+  address    String?
+  vatNumber  String?
+  notes      String?
+  isActive   Boolean    @default(true)
+  purchases  Purchase[]
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  @@map("suppliers")
+}
+
+// ─── Purchases ──────────────────────────────────────
+model Purchase {
+  id            String   @id @default(cuid())
+  businessId    String
+  supplierId    String
+  supplier      Supplier @relation(fields: [supplierId], references: [id])
+  reference     String
+  totalAmount   Decimal
+  taxAmount     Decimal  @default(0)
+  discount      Decimal  @default(0)
+  grandTotal    Decimal
+  paymentMethod String   @default("CASH")
+  paymentStatus String   @default("PAID")
+  notes         String?
+  createdBy     String
+  creator       User     @relation(fields: [createdBy], references: [id])
+  items         PurchaseItem[]
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("purchases")
+}
+
+model PurchaseItem {
+  id         String   @id @default(cuid())
+  purchaseId String
+  purchase   Purchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id])
+  quantity   Decimal
+  unitPrice  Decimal
+  total      Decimal
+  createdAt  DateTime @default(now())
+
+  @@map("purchase_items")
+}
+
+// ─── Sales ──────────────────────────────────────────
+model Sale {
+  id           String    @id @default(cuid())
+  businessId   String
+  shiftId      String?
+  shift        Shift?    @relation(fields: [shiftId], references: [id], onDelete: SetNull)
+  customerId   String?
+  customer     Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  cashUserId   String
+  cashier      User      @relation(fields: [cashUserId], references: [id])
+  saleType     String    @default("STANDARD")
+  status       String    @default("COMPLETED")
+  subtotal     Decimal
+  taxAmount    Decimal
+  discount     Decimal   @default(0)
+  grandTotal   Decimal
+  amountPaid   Decimal
+  amountChange Decimal   @default(0)
+  notes        String?
+  tableNumber  String?
+  orderType    String?
+  orderChannel String?
+  kitchenStatus String?
+  items        SaleItem[]
+  payments     SalePayment[]
+  invoice      Invoice?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@map("sales")
+}
+
+model SaleItem {
+  id        String  @id @default(cuid())
+  saleId    String
+  sale      Sale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  quantity  Decimal
+  unitPrice Decimal
+  taxRate   Decimal
+  taxAmount Decimal
+  discount  Decimal @default(0)
+  total     Decimal
+  notes     String?
+  createdAt DateTime @default(now())
+
+  @@map("sale_items")
+}
+
+model SalePayment {
+  id          String   @id @default(cuid())
+  saleId      String
+  sale        Sale     @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  method      String
+  amount      Decimal
+  referenceNo String?
+  createdAt   DateTime @default(now())
+
+  @@map("sale_payments")
+}
+
+// ─── Expenses ───────────────────────────────────────
+model Expense {
+  id          String   @id @default(cuid())
+  businessId  String
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  categoryId  String?
+  category    ExpenseCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  amount      Decimal
+  description String
+  method      String   @default("CASH")
+  receiptPath String?
+  notes       String?
+  createdAt   DateTime @default(now())
+
+  @@map("expenses")
+}
+
+model ExpenseCategory {
+  id         String    @id @default(cuid())
+  businessId String
+  nameAr     String
+  nameEn     String
+  expenses   Expense[]
+  createdAt  DateTime  @default(now())
+
+  @@map("expense_categories")
+}
+
+// ─── Shifts ─────────────────────────────────────────
+model Shift {
+  id            String   @id @default(cuid())
+  businessId    String
+  userId        String
+  user          User     @relation(fields: [userId], references: [id])
+  openedAt      DateTime @default(now())
+  closedAt      DateTime?
+  startingCash  Decimal
+  endingCash    Decimal?
+  expectedCash  Decimal?
+  variance      Decimal?
+  notes         String?
+  sales         Sale[]
+  status        String   @default("OPEN")
+
+  @@map("shifts")
+}
+
+// ─── Invoices (ZATCA-ready) ────────────────────────
+model Invoice {
+  id                  String    @id @default(cuid())
+  saleId              String    @unique
+  sale                Sale      @relation(fields: [saleId], references: [id])
+  invoiceNumber       String    @unique
+  uuid                String    @unique
+  invoiceType         String
+  counter             Int       @default(1)
+  previousInvoiceHash String?
+  zatcaHash           String?
+  zatcaQrCode         String?
+  zatcaStatus         String    @default("NOT_SUBMITTED")
+  zatcaSubmissionAt   DateTime?
+  zatcaClearanceRef   String?
+  sellerName          String
+  sellerVatNumber     String
+  reason              String?
+  createdAt           DateTime  @default(now())
+
+  @@map("invoices")
+}
+
+model ZatcaAuditLog {
+  id           String   @id @default(cuid())
+  invoiceId    String?
+  action       String
+  request      String?
+  response     String?
+  status       String
+  errorMessage String?
+  createdAt    DateTime @default(now())
+
+  @@map("zatca_audit_logs")
+}
+
+model TelegramLog {
+  id           String   @id @default(cuid())
+  type         String
+  message      String
+  status       String
+  errorMessage String?
+  sentAt       DateTime @default(now())
+
+  @@map("telegram_logs")
+}
+
+// ─── Licensing ──────────────────────────────────────
+model License {
+  id                String    @id @default(cuid())
+  key               String    @unique
+  businessId        String?
+  business          Business? @relation(fields: [businessId], references: [id])
+  deviceFingerprint String?
+  isActive          Boolean   @default(false)
+  activatedAt       DateTime?
+  expiresAt         DateTime?
+  createdAt         DateTime  @default(now())
+
+  @@map("licenses")
+}
+// ─── Day Close Reports ──────────────────────────────
+model DayClose {
+  id          String   @id @default(cuid())
+  businessId  String
+  closedBy    String
+  closedAt    DateTime @default(now())
+  periodStart DateTime
+  periodEnd   DateTime
+  saleCount   Int
+  subtotal    Decimal
+  tax         Decimal
+  discount    Decimal
+  grandTotal  Decimal
+  cashSales   Decimal
+  cardSales   Decimal
+  totalCost   Decimal
+  grossProfit Decimal
+  snapshot    String?
+
+  @@map("day_closes")
+}

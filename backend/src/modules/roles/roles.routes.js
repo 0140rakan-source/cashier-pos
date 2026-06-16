@@ -1,0 +1,11 @@
+const express = require('express');
+const { authenticate, requirePermission } = require('../../middleware/auth');
+const repo = require('../../repositories/role.repo');
+const router = express.Router();
+router.use(authenticate);
+router.get('/',   requirePermission('roles.view'),    async(req,res,next) => { try{ res.json({success:true,data:await repo.list()}); } catch(e){next(e);} });
+router.get('/:id',requirePermission('roles.view'),    async(req,res,next) => { try{ res.json({success:true,data:await repo.getById(req.params.id)}); } catch(e){next(e);} });
+router.post('/',  requirePermission('roles.create'),  async(req,res,next) => { try{ res.status(201).json({success:true,data:await repo.create(req.body)}); } catch(e){next(e);} });
+router.put('/:id',requirePermission('roles.edit'),    async(req,res,next) => { try{ res.json({success:true,data:await repo.update(req.params.id,req.body)}); } catch(e){next(e);} });
+router.delete('/:id',requirePermission('roles.delete'),async(req,res,next) => { try{ await repo.delete(req.params.id); res.json({success:true}); } catch(e){next(e);} });
+module.exports = router;
