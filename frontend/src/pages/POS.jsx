@@ -64,9 +64,9 @@ export default function POS() {
   const barcodeRef = useRef(null);
 
   // Modifiers state
-  const [modifierModal, setModifierModal] = useState(null); // { product, cartKey }
-  const [productModifiers, setProductModifiers] = useState([]);
-  const [selectedModifiers, setSelectedModifiers] = useState([]);
+  const [modifierModal, setModifierModal] = useState(null); // { product }
+  const [modGroups, setModGroups] = useState([]);            // groups with options
+  const [selectedOptions, setSelectedOptions] = useState({}); // { [groupId]: [optionId] }
 
   useEffect(() => {
     loadProducts();
@@ -113,14 +113,13 @@ export default function POS() {
   // فتح نافذة الإضافات عند الضغط على منتج
   const handleProductClick = async (product) => {
     try {
-      const res = await api.get(`/modifiers/${product.id}`);
-      const mods = res.data.data || [];
-      if (mods.length === 0) {
+      const res = await api.get(`/modifier-groups/${product.id}`);
+      const grps = (res.data.data || []).filter(g => (g.options || []).some(o => o.isAvailable !== false));
+      if (grps.length === 0) {
         addToCartDirect(product, []);
       } else {
-        setProductModifiers(mods);
-        const defaults = mods.filter(m => m.isDefault).map(m => m.id);
-        setSelectedModifiers(defaults);
+        setModGroups(grps);
+        setSelectedOptions({});
         setModifierModal({ product });
       }
     } catch {
@@ -128,8 +127,9 @@ export default function POS() {
     }
   };
 
+  // modifiers = flat array of chosen options: { optionId, groupName, nameAr, price }
   const addToCartDirect = (product, modifiers = []) => {
-    const cartKey = `${product.id}_${Date.now()}`;
+    const cartKey = `${product.id}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
     const modifierPrice = modifiers.reduce((sum, m) => sum + Number(m.price || 0), 0);
     setCart(prev => [...prev, {
       cartKey,
@@ -145,19 +145,58 @@ export default function POS() {
     }]);
   };
 
-  const confirmModifiers = () => {
-    if (!modifierModal) return;
-    const selected = productModifiers.filter(m => selectedModifiers.includes(m.id));
-    addToCartDirect(modifierModal.product, selected);
-    setModifierModal(null);
-    setSelectedModifiers([]);
-    setProductModifiers([]);
+  // radio for maxSelect=1, checkbox otherwise (respecting maxSelect)
+  const toggleOption = (group, optionId) => {
+    setSelectedOptions(prev => {
+      const cur = prev[group.id] || [];
+      const single = Number(group.maxSelect) === 1;
+      if (single) {
+        return { ...prev, [group.id]: (cur.includes(optionId) && !group.required) ? [] : [optionId] };
+      }
+      if (cur.includes(optionId)) return { ...prev, [group.id]: cur.filter(x => x !== optionId) };
+      if (cur.length >= Number(group.maxSelect)) {
+        toast.error(`الحد الأقصى ${group.maxSelect} في "${group.nameAr}"`);
+        return prev;
+      }
+      return { ...prev, [group.id]: [...cur, optionId] };
+    });
   };
 
-  const toggleModifier = (id) => {
-    setSelectedModifiers(prev =>
-      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
-    );
+  const modifiersValid = () => {
+    for (const g of modGroups) {
+      const sel = selectedOptions[g.id] || [];
+      if (g.required && sel.length < Math.max(1, Number(g.minSelect))) return false;
+      if (sel.length < Number(g.minSelect)) return false;
+      if (sel.length > Number(g.maxSelect)) return false;
+    }
+    return true;
+  };
+
+  const modifiersExtraPrice = () => {
+    let sum = 0;
+    for (const g of modGroups) {
+      for (const oid of (selectedOptions[g.id] || [])) {
+        const o = (g.options || []).find(x => x.id === oid);
+        if (o) sum += Number(o.priceDelta || 0);
+      }
+    }
+    return sum;
+  };
+
+  const confirmModifiers = () => {
+    if (!modifierModal) return;
+    if (!modifiersValid()) { toast.error('أكمل الخيارات الإجبارية'); return; }
+    const chosen = [];
+    for (const g of modGroups) {
+      for (const oid of (selectedOptions[g.id] || [])) {
+        const o = (g.options || []).find(x => x.id === oid);
+        if (o) chosen.push({ optionId: o.id, groupName: g.nameAr, nameAr: o.nameAr, price: Number(o.priceDelta || 0) });
+      }
+    }
+    addToCartDirect(modifierModal.product, chosen);
+    setModifierModal(null);
+    setSelectedOptions({});
+    setModGroups([]);
   };
 
   const handleBarcodeScan = (e) => {
@@ -262,7 +301,7 @@ export default function POS() {
           unitPrice: Number(i.basePrice || i.price),
           taxRate: 0.15,
           discount: 0,
-          modifiers: (i.modifiers || []).map(m => ({ modifierId: m.id, nameAr: m.nameAr, price: Number(m.price || 0) })),
+          modifiers: (i.modifiers || []).map(m => ({ optionId: m.optionId })),
         })),
         payments: [{ method: paymentMethod, amount: paymentMethod === 'CASH' ? cashReceived : grandTotal }],
         discount: Number(discountAmt) || 0,
@@ -496,41 +535,70 @@ export default function POS() {
     );
   }
 
-  // ─── Modifier Modal ─────────────────────────────────────
+  // ─── Modifier Modal ("تخصيص المنتج") ────────────────────
   if (modifierModal) {
-    const modPrice = productModifiers.filter(m => selectedModifiers.includes(m.id)).reduce((s, m) => s + Number(m.price || 0), 0);
+    const base = Number(modifierModal.product.salePrice);
+    const extra = modifiersExtraPrice();
+    const valid = modifiersValid();
     return (
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="font-bold text-lg">{modifierModal.product.nameAr}</h3>
-              <p className="text-sm text-gray-500">اختر الإضافات</p>
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" dir="rtl">
+        <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md max-h-[92vh] flex flex-col overflow-hidden">
+          <div className="flex items-center gap-3 p-5 border-b border-line">
+            <div className="w-14 h-14 rounded-2xl bg-brand-50 flex items-center justify-center text-2xl shrink-0">🍔</div>
+            <div className="flex-1">
+              <h3 className="font-bold text-lg text-ink">{modifierModal.product.nameAr}</h3>
+              <p className="text-sm text-muted">السعر الأساسي: {base.toFixed(2)} ر.س</p>
             </div>
-            <button onClick={() => setModifierModal(null)} className="p-1.5 hover:bg-gray-100 rounded-lg"><X size={18} /></button>
+            <button onClick={() => { setModifierModal(null); setSelectedOptions({}); setModGroups([]); }}
+              className="p-2 hover:bg-canvas rounded-xl text-muted"><X size={18} /></button>
           </div>
-          <div className="space-y-2 mb-5 max-h-64 overflow-auto">
-            {productModifiers.map(m => (
-              <button key={m.id} onClick={() => toggleModifier(m.id)}
-                className={`w-full flex items-center justify-between p-3 rounded-xl border-2 transition ${selectedModifiers.includes(m.id) ? 'border-brand-500 bg-brand-50' : 'border-gray-200 hover:border-gray-300'}`}>
-                <div className="flex items-center gap-2">
-                  <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${selectedModifiers.includes(m.id) ? 'bg-brand-500 border-brand-500' : 'border-gray-300'}`}>
-                    {selectedModifiers.includes(m.id) && <span className="text-white text-xs">✓</span>}
+
+          <div className="flex-1 overflow-auto p-5 space-y-5">
+            {modGroups.map(g => {
+              const sel = selectedOptions[g.id] || [];
+              const single = Number(g.maxSelect) === 1;
+              const incomplete = (g.required && sel.length < Math.max(1, Number(g.minSelect))) || sel.length < Number(g.minSelect);
+              return (
+                <div key={g.id}>
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="font-semibold text-sm text-ink flex items-center gap-2">
+                      {g.nameAr}
+                      {g.required && <span className="text-[11px] px-2 py-0.5 rounded-full bg-red-50 text-red-600 font-medium">مطلوب</span>}
+                    </p>
+                    <span className="text-[11px] text-muted">{single ? 'اختر واحداً' : `اختر حتى ${g.maxSelect}`}</span>
                   </div>
-                  <span className="font-medium text-sm">{m.nameAr}</span>
+                  <div className="space-y-2">
+                    {(g.options || []).filter(o => o.isAvailable !== false).map(o => {
+                      const checked = sel.includes(o.id);
+                      return (
+                        <button key={o.id} onClick={() => toggleOption(g, o.id)}
+                          className={`w-full flex items-center justify-between p-3 rounded-xl border-2 transition ${checked ? 'border-brand-500 bg-brand-50' : 'border-line hover:border-gray-300'}`}>
+                          <div className="flex items-center gap-2.5">
+                            <div className={`w-5 h-5 ${single ? 'rounded-full' : 'rounded-md'} border-2 flex items-center justify-center ${checked ? 'bg-brand-600 border-brand-600' : 'border-gray-300'}`}>
+                              {checked && <span className="text-white text-xs leading-none">{single ? '●' : '✓'}</span>}
+                            </div>
+                            <span className="font-medium text-sm text-ink">{o.nameAr}</span>
+                          </div>
+                          <span className="text-sm text-muted">{Number(o.priceDelta) > 0 ? `+${Number(o.priceDelta).toFixed(2)} ر.س` : 'مجاني'}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {incomplete && <p className="text-[11px] text-red-500 mt-1.5">{g.required && sel.length === 0 ? 'هذا الاختيار إجباري' : `اختر ${g.minSelect} على الأقل`}</p>}
                 </div>
-                <span className="text-sm text-gray-500">{Number(m.price) > 0 ? `+${Number(m.price).toFixed(2)} ر.س` : 'مجاني'}</span>
-              </button>
-            ))}
+              );
+            })}
           </div>
-          <div className="text-center text-sm text-gray-500 mb-4">
-            السعر: {Number(modifierModal.product.salePrice).toFixed(2)} ر.س
-            {modPrice > 0 && <span className="text-brand-600"> + {modPrice.toFixed(2)} ر.س إضافات</span>}
-            <span className="font-bold text-brand-600 block text-lg">{(Number(modifierModal.product.salePrice) + modPrice).toFixed(2)} ر.س</span>
-          </div>
-          <div className="flex gap-3">
-            <button onClick={confirmModifiers} className="flex-1 py-3 bg-brand-500 text-white rounded-xl font-bold hover:bg-brand-600">إضافة للسلة</button>
-            <button onClick={() => setModifierModal(null)} className="px-4 py-3 bg-gray-100 rounded-xl font-medium">إلغاء</button>
+
+          <div className="p-5 border-t border-line bg-canvas">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-sm text-muted">السعر النهائي</span>
+              <span className="text-2xl font-black text-brand-600">{(base + extra).toFixed(2)} <span className="text-sm font-medium">ر.س</span></span>
+            </div>
+            <button onClick={confirmModifiers} disabled={!valid}
+              className="w-full py-3.5 bg-brand-600 text-white rounded-xl font-bold hover:bg-brand-700 disabled:opacity-50 transition">
+              إضافة للسلة
+            </button>
           </div>
         </div>
       </div>
@@ -600,7 +668,7 @@ export default function POS() {
                     <p className="text-sm font-medium truncate">{item.nameAr}</p>
                     {item.modifiers && item.modifiers.length > 0 && (
                       <div className="mt-0.5">
-                        {item.modifiers.map((m, i) => <span key={i} className="text-[10px] text-gray-400 block">✓ {m.nameAr}</span>)}
+                        {item.modifiers.map((m, i) => <span key={i} className="text-[10px] text-gray-400 block">• {m.nameAr}{Number(m.price) > 0 ? ` +${Number(m.price).toFixed(2)}` : ''}</span>)}
                       </div>
                     )}
                     <p className="text-xs text-gray-400">{(item.price * item.quantity).toFixed(2)} ر.س</p>

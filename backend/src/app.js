@@ -13,6 +13,7 @@ const settingsRoutes    = require('./modules/settings/settings.routes');
 const categoryRoutes    = require('./modules/categories/categories.routes');
 const productRoutes     = require('./modules/products/products.routes');
 const modifierRoutes    = require('./modules/products/modifiers.routes');
+const modifierGroupRoutes = require('./modules/products/modifier-groups.routes');
 const customerRoutes    = require('./modules/customers/customers.routes');
 const supplierRoutes    = require('./modules/suppliers/suppliers.routes');
 const inventoryRoutes   = require('./modules/inventory/inventory.routes');
@@ -84,6 +85,7 @@ function createApp() {
   app.use('/api/shifts',     authenticate, requireLicense, shiftsRoutes);
   app.use('/api/products',   authenticate, requireLicense, productRoutes);
   app.use('/api/modifiers',  authenticate, requireLicense, modifierRoutes);
+  app.use('/api/modifier-groups', authenticate, requireLicense, modifierGroupRoutes);
   app.use('/api/categories', authenticate, requireLicense, categoryRoutes);
   app.use('/api/customers',  authenticate, requireLicense, customerRoutes);
   app.use('/api/inventory',  authenticate, requireLicense, inventoryRoutes);

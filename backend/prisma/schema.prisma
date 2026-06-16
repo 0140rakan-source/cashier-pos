@@ -148,6 +148,7 @@ model Product {
   saleItems    SaleItem[]
   purchaseItems PurchaseItem[]
   modifiers    ProductModifier[]
+  modifierGroups ProductModifierGroup[]
 
   @@map("products")
 }
@@ -167,6 +168,42 @@ model ProductModifier {
   saleItemModifiers SaleItemModifier[]
 
   @@map("product_modifiers")
+}
+
+// ─── Grouped Modifiers (مجموعات الخيارات) ───────────────
+model ProductModifierGroup {
+  id          String   @id @default(cuid())
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  nameAr      String
+  nameEn      String?
+  required    Boolean  @default(false)
+  minSelect   Int      @default(0)
+  maxSelect   Int      @default(1)
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  options     ProductModifierOption[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("product_modifier_groups")
+}
+
+model ProductModifierOption {
+  id          String   @id @default(cuid())
+  groupId     String
+  group       ProductModifierGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  nameAr      String
+  nameEn      String?
+  priceDelta  Decimal  @default(0)
+  isAvailable Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  orderItemModifiers OrderItemModifier[]
+
+  @@map("product_modifier_options")
 }
 
 model Inventory {
@@ -318,6 +355,7 @@ model SaleItem {
   createdAt DateTime @default(now())
 
   modifiers SaleItemModifier[]
+  orderModifiers OrderItemModifier[]
 
   @@map("sale_items")
 }
@@ -334,6 +372,22 @@ model SaleItemModifier {
   createdAt  DateTime        @default(now())
 
   @@map("sale_item_modifiers")
+}
+
+// ─── Order Item Modifier Snapshot (الإضافات المختارة داخل الطلب) ──
+model OrderItemModifier {
+  id         String   @id @default(cuid())
+  saleItemId String
+  saleItem   SaleItem @relation(fields: [saleItemId], references: [id], onDelete: Cascade)
+  optionId   String?
+  option     ProductModifierOption? @relation(fields: [optionId], references: [id], onDelete: SetNull)
+  groupName  String
+  optionName String
+  priceDelta Decimal  @default(0)
+  quantity   Int      @default(1)
+  createdAt  DateTime @default(now())
+
+  @@map("order_item_modifiers")
 }
 
 model SalePayment {

@@ -236,11 +236,12 @@ router.delete('/purge', requirePermission('users.delete'), async (req, res, next
 });
 
 // ─── createSale helper ────────────────────────────────────────────────────────
-// SECURITY: Always fetch product price from DB — never trust client-supplied price
+// SECURITY: Always fetch product price from DB — never trust client-supplied price.
+// Validates modifier groups (required/min/max) server-side and stores OrderItemModifier snapshots.
 async function createSale({ businessId, userId, shiftId, items, payments, discount = 0, notes, customerId, orderType, orderChannel }) {
   return prisma.$transaction(async (tx) => {
     let subtotal = 0, totalTax = 0;
-    const saleItems = [];
+    const saleItemsToCreate = [];
 
     for (const item of items) {
       const product = await tx.product.findUnique({ where: { id: item.productId } });
@@ -253,13 +254,50 @@ async function createSale({ businessId, userId, shiftId, items, payments, discou
       if (!qty || qty <= 0)
         throw Object.assign(new Error(`كمية غير صحيحة للمنتج ${product.nameAr}`), { statusCode: 422 });
 
-      // Check stock availability
+      // ── Stock check ──
       const inv = await tx.inventory.findFirst({ where: { businessId, productId: item.productId } });
-      if (!inv || Number(inv.currentStock) < qty)
-        throw Object.assign(new Error(`المخزون غير كافٍ للمنتج: ${product.nameAr} (متاح: ${inv ? Number(inv.currentStock) : 0})`), { statusCode: 400 });
+      if (product.trackStock !== false) {
+        if (!inv || Number(inv.currentStock) < qty)
+          throw Object.assign(new Error(`المخزون غير كافٍ للمنتج: ${product.nameAr} (متاح: ${inv ? Number(inv.currentStock) : 0})`), { statusCode: 400 });
+      }
 
-      // Price ALWAYS from DB
-      const unitPrice = Number(product.salePrice);
+      // ── Modifiers: validate + price from DB ──
+      const selectedOptionIds = Array.isArray(item.modifiers)
+        ? item.modifiers.map(m => m.optionId).filter(Boolean)
+        : [];
+
+      let modifierDelta = 0;
+      const modifierSnapshots = [];
+
+      const groups = await tx.productModifierGroup.findMany({
+        where: { productId: product.id, isActive: true },
+        include: { options: true },
+      });
+
+      for (const g of groups) {
+        const chosen = g.options.filter(o => selectedOptionIds.includes(o.id) && o.isAvailable);
+
+        if (g.required && chosen.length < Math.max(1, g.minSelect))
+          throw Object.assign(new Error(`يجب اختيار من المجموعة الإجبارية: ${g.nameAr}`), { statusCode: 422 });
+        if (chosen.length < g.minSelect)
+          throw Object.assign(new Error(`اختر ${g.minSelect} على الأقل من: ${g.nameAr}`), { statusCode: 422 });
+        if (chosen.length > g.maxSelect)
+          throw Object.assign(new Error(`الحد الأقصى ${g.maxSelect} خيارات في: ${g.nameAr}`), { statusCode: 422 });
+
+        for (const o of chosen) {
+          modifierDelta += Number(o.priceDelta);
+          modifierSnapshots.push({
+            optionId: o.id,
+            groupName: g.nameAr,
+            optionName: o.nameAr,
+            priceDelta: Number(o.priceDelta),
+            quantity: 1,
+          });
+        }
+      }
+
+      // Price ALWAYS from DB (base + verified modifier deltas)
+      const unitPrice = Number(product.salePrice) + modifierDelta;
       const taxRate = Number(product.taxRate || 0.15);
       const itemDiscount = Number(item.discount || 0);
       const lineBase = unitPrice * qty - itemDiscount;
@@ -268,25 +306,30 @@ async function createSale({ businessId, userId, shiftId, items, payments, discou
       subtotal += lineBase;
       totalTax += lineTax;
 
-      saleItems.push({
-        productId: item.productId,
-        quantity: qty,
-        unitPrice,
-        taxRate,
-        discount: itemDiscount,
-        taxAmount: lineTax,
-        total: lineBase + lineTax,
+      saleItemsToCreate.push({
+        data: {
+          productId: item.productId,
+          quantity: qty,
+          unitPrice,
+          taxRate,
+          discount: itemDiscount,
+          taxAmount: lineTax,
+          total: lineBase + lineTax,
+          notes: item.notes || null,
+        },
+        modifierSnapshots,
       });
 
       // Deduct stock
-      const prev = Number(inv.currentStock);
-      const newQty = prev - qty;
-      await tx.inventory.update({ where: { id: inv.id }, data: { currentStock: newQty } });
-      await tx.inventoryLog.create({ data: {
-        businessId, productId: item.productId, changeType: 'SALE',
-        quantity: qty, previousQty: prev, newQty, referenceId: 'pending',
-        note: 'بيع',
-      }});
+      if (product.trackStock !== false && inv) {
+        const prev = Number(inv.currentStock);
+        const newQty = prev - qty;
+        await tx.inventory.update({ where: { id: inv.id }, data: { currentStock: newQty } });
+        await tx.inventoryLog.create({ data: {
+          businessId, productId: item.productId, changeType: 'SALE',
+          quantity: qty, previousQty: prev, newQty, referenceId: 'pending', note: 'بيع',
+        }});
+      }
     }
 
     const discountAmount = Math.max(0, Number(discount));
@@ -306,22 +349,36 @@ async function createSale({ businessId, userId, shiftId, items, payments, discou
         notes: notes || null,
         orderType: orderType || null,
         orderChannel: orderChannel || null,
-        items: { create: saleItems },
         payments: { create: payments.map(p => ({ method: p.method || 'CASH', amount: Number(p.amount) })) },
-      },
-      include: {
-        items: { include: { product: { select: { nameAr: true, nameEn: true, barcode: true } } } },
-        payments: true,
       },
     });
 
-    // Update inventoryLog referenceId now that we have the sale id
+    for (const si of saleItemsToCreate) {
+      const created = await tx.saleItem.create({ data: { saleId: sale.id, ...si.data } });
+      if (si.modifierSnapshots.length) {
+        await tx.orderItemModifier.createMany({
+          data: si.modifierSnapshots.map(m => ({ saleItemId: created.id, ...m })),
+        });
+      }
+    }
+
     await tx.inventoryLog.updateMany({
       where: { businessId, referenceId: 'pending' },
       data: { referenceId: sale.id },
     });
 
-    return sale;
+    return tx.sale.findUnique({
+      where: { id: sale.id },
+      include: {
+        items: {
+          include: {
+            product: { select: { nameAr: true, nameEn: true, barcode: true } },
+            orderModifiers: true,
+          },
+        },
+        payments: true,
+      },
+    });
   });
 }
 
